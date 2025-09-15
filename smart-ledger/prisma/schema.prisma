@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserSetting {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  categorizerProvider CategorizerProvider @default(OPENAI)
+  autoAnalyzeEnabled Boolean  @default(true)
+  currency           String   @default("CNY")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model ImportJob {
+  id           String   @id @default(cuid())
+  userId       String
+  filename     String
+  status       ImportStatus @default(PENDING)
+  error        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  jobId         String?
+  occurredAt    DateTime
+  description   String
+  merchant      String?
+  amount        Decimal
+  currency      String   @default("CNY")
+  raw           Json?
+  category      String?
+  categoryScore Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  job           ImportJob? @relation(fields: [jobId], references: [id])
+  @@index([userId, occurredAt])
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CategorizerProvider {
+  OPENAI
+  COZE
+  DIFY
+  RULES
+}
+
