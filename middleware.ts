@@ -1,10 +1,19 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export default authMiddleware({
-  publicRoutes: ["/", "/sign-in(.*)", "/sign-up(.*)", "/api/inngest(.*)"],
+// Define public routes (no auth required)
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/inngest(.*)",
+]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isPublicRoute(req)) return; // allow public
+  auth.protect(); // protect others
 });
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)"],
+  // Run middleware on all routes except static assets & _next
+  matcher: ["/(api|trpc)(.*)", "/((?!_next|.*\\..*).*)"],
 };
-
