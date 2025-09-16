@@ -26,6 +26,7 @@ model ImportJob {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   transactions Transaction[]
+  draftTransactions DraftTransaction[]
 }
 
 model Transaction {
@@ -46,9 +47,29 @@ model Transaction {
   @@index([userId, occurredAt])
 }
 
+model DraftTransaction {
+  id            String   @id @default(cuid())
+  userId        String
+  jobId         String
+  occurredAt    DateTime
+  description   String
+  merchant      String?
+  amount        Decimal
+  currency      String   @default("CNY")
+  raw           Json?
+  category      String?
+  categoryScore Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  job           ImportJob @relation(fields: [jobId], references: [id])
+  @@index([jobId])
+  @@index([userId, occurredAt])
+}
+
 enum ImportStatus {
   PENDING
   PROCESSING
+  REVIEW
   COMPLETED
   FAILED
 }
