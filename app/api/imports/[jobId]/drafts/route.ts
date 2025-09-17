@@ -5,8 +5,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
+  const params = await context.params;
   const { userId } = await auth();
   if (!userId) return new Response("Unauthorized", { status: 401 });
   const jobId = params.jobId;

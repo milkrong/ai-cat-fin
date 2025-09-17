@@ -26,11 +26,12 @@ export async function POST(request: Request) {
     data: { userId, filename: file.name, status: "PENDING" },
   });
 
+  const lower = file.name.toLowerCase();
+  const isExcel = /\.(xlsx|xls|csv)$/.test(lower);
   await inngest.send({
-    name: "pdf/ingested",
+    name: isExcel ? "excel/ingested" : "pdf/ingested",
     data: { userId, jobId: job.id, filename: file.name, fileBuffer: base64 },
   });
 
   return Response.json({ jobId: job.id });
 }
-

@@ -38,14 +38,14 @@ npm run dev
 
 Endpoints
 
-- /api/upload: POST multipart/form-data with field `file` (PDF)
+- /api/upload: POST multipart/form-data with field `file` (PDF 或 Excel: .xlsx/.xls/.csv)
 - /api/inngest: Inngest handler
 
 Auth
 
 - /sign-in, /sign-up
 
-AI Categorization & Chinese Parsing
+AI Categorization, Excel & Chinese Parsing
 
 - 默认使用 OpenAI，如果设置了 `SILICONFLOW_API_KEY` 会优先使用 SiliconFlow（模型示例: Qwen/Qwen2.5-7B-Instruct）。
 - PDF 解析后首先用正则提取常见格式：
@@ -53,11 +53,17 @@ AI Categorization & Chinese Parsing
   - `YYYY/MM/DD 星巴克 -23.50 元`
   - `01月02日 星巴克 23.50`
 - 无法匹配的剩余行会打包发送给 SiliconFlow 让模型输出结构化 JSON（日期、描述、金额、币种）。
+- Excel (.xlsx/.xls/.csv) 会解析第一张表的前几列，自动匹配列名(日期/描述/金额/币种/商户)。解析结果同样进入草稿审核。
 - 分类输出包含 `category` 与置信度 `score`，中文常见分类如：餐饮, 交通出行, 日用品, 娱乐, 网购, 其他 等。
 
 Workflow 返回
 
-Inngest 工作流 `parse-and-categorize` 返回：
+Inngest 工作流：
+
+- `parse-and-categorize` (PDF)
+- `parse-and-categorize-excel` (Excel)
+
+均返回：
 
 ```json
 { "count": <交易数>, "categories": { "餐饮": 123.45, "交通出行": 50.00 } }

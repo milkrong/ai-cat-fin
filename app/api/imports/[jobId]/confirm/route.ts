@@ -6,8 +6,9 @@ export const runtime = "nodejs";
 
 export async function POST(
   req: Request,
-  { params }: { params: { jobId: string } }
+  context: { params: Promise<{ jobId: string }> }
 ) {
+  const params = await context.params;
   const { userId } = await auth();
   if (!userId) return new Response("Unauthorized", { status: 401 });
   const jobId = params.jobId;
@@ -46,7 +47,7 @@ export async function POST(
         currency: d.currency,
         category: o?.category ?? d.category,
         categoryScore: d.categoryScore,
-        raw: d.raw,
+        raw: d.raw as any,
       },
     });
   }

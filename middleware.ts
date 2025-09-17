@@ -5,15 +5,22 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/api/inngest(.*)",
+  "/api/inngest(.*)", // inngest endpoint
 ]);
 
-export default clerkMiddleware((auth, req) => {
-  if (isPublicRoute(req)) return; // allow public
-  auth.protect(); // protect others
+export default clerkMiddleware(async (auth, req) => {
+  // Allow explicitly public routes
+  if (isPublicRoute(req)) return;
+
+  // For everything else, let Clerk enforce authentication
+  await auth.protect();
 });
 
 export const config = {
-  // Run middleware on all routes except static assets & _next
-  matcher: ["/(api|trpc)(.*)", "/((?!_next|.*\\..*).*)"],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
+  ],
 };

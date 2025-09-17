@@ -6,6 +6,7 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   SILICONFLOW_API_KEY: z.string().optional(),
   SILICONFLOW_BASE_URL: z.string().optional(),
+  FORCE_AI_PARSE: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -14,4 +15,5 @@ export const env = envSchema.parse({
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   SILICONFLOW_API_KEY: process.env.SILICONFLOW_API_KEY,
   SILICONFLOW_BASE_URL: process.env.SILICONFLOW_BASE_URL,
+  FORCE_AI_PARSE: process.env.FORCE_AI_PARSE,
 });
