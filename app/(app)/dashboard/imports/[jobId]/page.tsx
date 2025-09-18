@@ -1,26 +1,44 @@
 import { auth } from "@clerk/nextjs/server";
 import ReviewClient from "./review-client";
+import { prisma } from "@/src/lib/db";
 
-async function fetchDrafts(jobId: string, userId: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/imports/${jobId}/drafts`,
-    {
-      cache: "no-store",
-      headers: {},
-    }
-  );
-  if (!res.ok) return { job: null, drafts: [] };
-  return res.json();
-}
-
-export default async function ImportReviewPage({
-  params,
-}: {
-  params: { jobId: string };
+export default async function ImportReviewPage(props: {
+  params: Promise<{ jobId: string }> | { jobId: string };
 }) {
+  // Support both old (promise) and new (object) param shapes for safety
+  const resolvedParams =
+    props.params instanceof Promise ? await props.params : props.params;
+  const jobId = resolvedParams.jobId;
+
   const { userId } = await auth();
   if (!userId) return <div className="p-4 text-sm text-red-600">未登录</div>;
-  const data = await fetchDrafts(params.jobId, userId);
-  if (!data.job) return <div className="p-4">任务不存在</div>;
-  return <ReviewClient job={data.job} initialDrafts={data.drafts} />;
+
+  const job = await prisma.importJob.findFirst({
+    where: { id: jobId, userId },
+  });
+  if (!job) return <div className="p-4">任务不存在</div>;
+
+  const draftsDb = await prisma.draftTransaction.findMany({
+    where: { jobId },
+    orderBy: { occurredAt: "asc" },
+  });
+
+  const drafts = draftsDb.map((d) => ({
+    id: d.id,
+    occurredAt: d.occurredAt.toISOString(),
+    description: d.description,
+    merchant: d.merchant,
+    amount: Number(d.amount),
+    currency: d.currency,
+    category: d.category,
+    categoryScore: d.categoryScore,
+    raw: d.raw as any,
+  }));
+
+  return (
+    <ReviewClient
+      job={{ id: job.id, status: job.status }}
+      initialDrafts={drafts}
+    />
+  );
 }

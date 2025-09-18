@@ -1,7 +1,9 @@
 import { inngest } from "@/src/lib/inngest";
 import { prisma } from "@/src/lib/db";
-import pdf from "pdf-parse";
-import { categorizeDescription } from "@/src/services/categorizer";
+// Import the library implementation directly to avoid pdf-parse's index.js
+// debug self-execution that attempts to read a test PDF when module.parent is falsy.
+// Turbopack/Next bundling can cause that condition, leading to ENOENT './test/data/05-versions-space.pdf'.
+import pdf from "pdf-parse/lib/pdf-parse.js";
 import { aiExtractTransactionsFromText } from "@/src/services/ai-extract";
 
 type EventPayload = {
@@ -26,7 +28,20 @@ export const parseAndCategorize = inngest.createFunction(
     });
 
     const buffer = Buffer.from(fileBuffer, "base64");
-    const result = await pdf(buffer);
+    let result: any;
+    try {
+      result = await pdf(buffer);
+    } catch (err: any) {
+      console.error("[Inngest] pdf parse error", {
+        jobId,
+        error: err?.message,
+      });
+      await prisma.importJob.update({
+        where: { id: jobId },
+        data: { status: "FAILED" as any },
+      });
+      throw err;
+    }
     // Pure AI extraction approach (no regex / heuristic parsing)
     const allText = result.text.slice(0, 25000);
     const aiFull = await step.run("ai-full-parse", async () =>
@@ -39,9 +54,10 @@ export const parseAndCategorize = inngest.createFunction(
         return {
           occurredAt,
           description: t.description,
-          // store amount as positive; income/expense type could be added later
           amount: Math.abs(t.amount),
           currency: (t.currency ?? "CNY").toUpperCase(),
+          category: t.category || "其他",
+          categoryScore: t.categoryScore ?? 0.5,
           raw: "AI_FULL:" + t.description,
         };
       })
@@ -50,21 +66,14 @@ export const parseAndCategorize = inngest.createFunction(
       description: string;
       amount: number;
       currency: string;
+      category: string;
+      categoryScore: number;
       raw: string;
     }>;
 
     const categoryTotals: Record<string, number> = {};
     for (const t of txs) {
-      const { category, score } = await step.run(
-        `categorize-${t.description.slice(0, 20)}`,
-        async () =>
-          categorizeDescription(
-            t.description,
-            null,
-            process.env.SILICONFLOW_API_KEY ? "SILICONFLOW" : "OPENAI"
-          )
-      );
-      categoryTotals[category] = (categoryTotals[category] ?? 0) + t.amount;
+      categoryTotals[t.category] = (categoryTotals[t.category] ?? 0) + t.amount;
       await (prisma as any).draftTransaction.create({
         data: {
           userId,
@@ -74,8 +83,8 @@ export const parseAndCategorize = inngest.createFunction(
           merchant: null,
           amount: t.amount,
           currency: t.currency,
-          category,
-          categoryScore: score,
+          category: t.category,
+          categoryScore: t.categoryScore,
           raw: t.raw,
         },
       });
