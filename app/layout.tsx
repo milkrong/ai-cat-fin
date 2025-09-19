@@ -8,6 +8,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,23 +35,51 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
         >
-          <header className="flex justify-between items-center p-4 gap-4 h-16 border-b">
-            <h2>Smart Ledger</h2>
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
+          <header className="flex justify-between items-center p-4 gap-4 h-16 border-b shrink-0">
+            <div className="flex items-center gap-6 min-w-0">
+              <h2 className="text-lg font-semibold tracking-tight whitespace-nowrap">
+                <Link href="/" className="hover:opacity-80 transition-opacity">
+                  Smart Ledger
+                </Link>
+              </h2>
+              <nav className="hidden sm:flex gap-4 text-sm text-gray-600">
+                <Link
+                  href="/dashboard"
+                  className="hover:text-blue-600 transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/upload"
+                  className="hover:text-blue-600 transition-colors"
+                >
+                  Upload
+                </Link>
+                <Link
+                  href="/dashboard/transactions"
+                  className="hover:text-blue-600 transition-colors"
+                >
+                  Transactions
+                </Link>
+              </nav>
+            </div>
+            <div className="flex items-center gap-4">
+              <SignedOut>
+                <SignInButton />
+                <SignUpButton>
+                  <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+            </div>
           </header>
-          {children}
+          <main className="flex-1 overflow-y-auto min-h-0">{children}</main>
         </body>
       </html>
     </ClerkProvider>

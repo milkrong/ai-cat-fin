@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/src/lib/db";
 import { format } from "date-fns";
+import { formatCurrency } from "@/src/lib/format";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -22,23 +23,6 @@ export default async function Home() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-10">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Smart Ledger</h1>
-        <div className="flex gap-3 text-sm">
-          <Link href="/dashboard" className="text-blue-600 underline">
-            Dashboard
-          </Link>
-          <Link href="/dashboard/upload" className="text-blue-600 underline">
-            Upload
-          </Link>
-          <Link
-            href="/dashboard/transactions"
-            className="text-blue-600 underline"
-          >
-            Transactions
-          </Link>
-        </div>
-      </header>
       <section className="space-y-2">
         <p className="text-sm text-gray-600">
           {userId ? `欢迎，用户 ${userId}` : "请登录以开始上传账单"}
@@ -109,8 +93,12 @@ export default async function Home() {
                       {format(t.occurredAt, "MM-dd")} {t.category ?? "未分类"}
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    {t.amount.toString()} {t.currency}
+                  <div
+                    className={`text-right text-sm ${
+                      Number(t.amount) < 0 ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {formatCurrency(Number(t.amount))}
                   </div>
                 </div>
               ))}

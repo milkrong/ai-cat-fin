@@ -2,13 +2,12 @@ import { auth } from "@clerk/nextjs/server";
 import ReviewClient from "./review-client";
 import { prisma } from "@/src/lib/db";
 
-export default async function ImportReviewPage(props: {
-  params: Promise<{ jobId: string }> | { jobId: string };
-}) {
-  // Support both old (promise) and new (object) param shapes for safety
-  const resolvedParams =
-    props.params instanceof Promise ? await props.params : props.params;
-  const jobId = resolvedParams.jobId;
+interface PageProps {
+  params: { jobId: string };
+}
+
+export default async function ImportReviewPage({ params }: PageProps) {
+  const { jobId } = params;
 
   const { userId } = await auth();
   if (!userId) return <div className="p-4 text-sm text-red-600">未登录</div>;

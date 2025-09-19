@@ -1,10 +1,20 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { prisma } from "@/src/lib/db";
 
 export default async function Page() {
   const { userId } = await auth();
   if (!userId) return null;
+  const user = await currentUser();
+  const displayName = (() => {
+    if (user?.firstName && user?.lastName)
+      return `${user.firstName} ${user.lastName}`;
+    if (user?.firstName) return user.firstName;
+    if (user?.username) return user.username;
+    if (user?.emailAddresses?.[0]?.emailAddress)
+      return user.emailAddresses[0].emailAddress;
+    return userId;
+  })();
   const jobs = await prisma.importJob.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -13,22 +23,7 @@ export default async function Page() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold mb-2">Dashboard</h1>
-        <p className="text-sm text-gray-600">User: {userId}</p>
-      </div>
-      <div className="flex gap-3 text-sm">
-        <Link href="/" className="text-blue-600 underline">
-          Home
-        </Link>
-        <Link href="/dashboard/upload" className="text-blue-600 underline">
-          Upload
-        </Link>
-        <Link
-          href="/dashboard/transactions"
-          className="text-blue-600 underline"
-        >
-          Transactions
-        </Link>
+        <p className="text-sm text-gray-600">User: {displayName}</p>
       </div>
       <div>
         <h2 className="font-medium mb-2">Recent Imports</h2>
