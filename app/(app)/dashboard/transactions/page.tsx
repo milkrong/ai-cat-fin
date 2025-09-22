@@ -13,14 +13,8 @@ import Link from "next/link";
 import { TransactionsCalendar } from "./calendar";
 import { formatCurrency } from "@/src/lib/format";
 
-interface PageProps {
-  searchParams:
-    | Promise<{ date?: string; month?: string }>
-    | { date?: string; month?: string };
-}
-
-export default async function TransactionsPage(props: PageProps) {
-  const searchParams = await props.searchParams;
+// Let Next.js supply `searchParams` without strict typing to avoid mismatch with generated types
+export default async function TransactionsPage({ searchParams }: any) {
   const dateParam =
     typeof searchParams?.date === "string" ? searchParams.date : undefined;
   const monthParam =

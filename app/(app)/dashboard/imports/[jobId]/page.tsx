@@ -2,12 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import ReviewClient from "./review-client";
 import { prisma } from "@/src/lib/db";
 
-interface PageProps {
-  params: { jobId: string };
-}
-
-export default async function ImportReviewPage({ params }: PageProps) {
-  const { jobId } = params;
+// Rely on Next.js route segment param inference (params.jobId)
+export default async function ImportReviewPage({ params }: { params: any }) {
+  const { jobId } = params as { jobId: string };
 
   const { userId } = await auth();
   if (!userId) return <div className="p-4 text-sm text-red-600">未登录</div>;

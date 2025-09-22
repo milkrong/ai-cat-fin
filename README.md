@@ -24,6 +24,10 @@ Optional AI Providers:
 - SILICONFLOW_API_KEY (启用 SiliconFlow，用于中文批量解析与分类)
 - SILICONFLOW_BASE_URL (可选，默认 https://api.siliconflow.cn)
 
+Cleanup Cron:
+
+- IMPORT_JOB_REVIEW_RETENTION_DAYS (可选，默认 7)。定时任务 `cleanup-stale-import-jobs` 每小时执行，删除创建时间早于该天数并且仍处于 PENDING / PROCESSING / REVIEW / FAILED 状态的 ImportJob 及其 DraftTransaction（防止长期未确认的任务堆积）。
+
 3. Migrate database
 
 ```bash
