@@ -93,6 +93,50 @@ POST /api/imports/abcd123/confirm
 
 前端可根据需要在确认前允许批量修改分类。
 
+## 统一验证与错误处理 (Validation & Error Handling)
+
+项目内新增 `src/lib/api.ts` 封装：
+
+- `ApiError` 自定义错误（`throw new ApiError(400, "invalid_input")`）。
+- `jsonError`：在 `catch` 中统一转换为 `{ error, code?, details? }`。
+- `overridesSchema`, `monthParamSchema`, `idParam` 等常用 zod schema。
+
+示例：在 Route Handler 中使用：
+
+```ts
+import { ApiError, jsonError, overridesSchema } from "@/src/lib/api";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { overrides } = overridesSchema.parse(body);
+    if (overrides.length > 1000) throw new ApiError(400, "too_many_overrides");
+    return Response.json({ ok: true });
+  } catch (e) {
+    return jsonError(e);
+  }
+}
+```
+
+统一响应规范：
+
+```json
+// 成功
+{ "jobId": "abc123" }
+
+// 失败
+{ "error": "invalid_job_id", "code": "invalid_job_id" }
+```
+
+扩展新接口时：
+
+1. 用 zod schema 校验 query/body。
+2. 遇到业务错误 throw `ApiError(status, code)`。
+3. `catch` 分支调用 `jsonError(e)`。
+4. 返回结构中不要额外包裹通用字段（例如统一 data 包装），保持简洁。
+
+上传接口现在加入：大小限制 10MB、扩展名白名单（PDF / Excel），错误码：`file_too_large`, `unsupported_file_type`。
+
 开发调试提示
 
 - 未配置任何 AI key 时可切换 provider 为 RULES（简单规则分类）。

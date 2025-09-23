@@ -47,18 +47,23 @@ export const parseAndCategorize = inngest.createFunction(
     const aiFull = await step.run("ai-full-parse", async () =>
       aiExtractTransactionsFromText(allText)
     );
+    // Preserve sign semantics: AI 层约定 expense 正/负不一，这里统一：支出为负数，收入为正数
     const txs = aiFull
       .map((t) => {
         const occurredAt = new Date(t.date);
         if (Number.isNaN(occurredAt.getTime())) return null;
+        let amount = t.amount;
+        // 若模型未规范 sign，可用 type 辅助；默认支出: 负数
+        if (t.type === "expense" && amount > 0) amount = -amount;
+        if (t.type === "income" && amount < 0) amount = Math.abs(amount);
         return {
           occurredAt,
           description: t.description,
-          amount: Math.abs(t.amount),
+          amount, // Decimal(18,2) 由 Prisma 处理
           currency: (t.currency ?? "CNY").toUpperCase(),
           category: t.category || "其他",
           categoryScore: t.categoryScore ?? 0.5,
-          raw: "AI_FULL:" + t.description,
+          raw: { source: "AI_FULL", text: t.description },
         };
       })
       .filter(Boolean) as Array<{
@@ -68,14 +73,17 @@ export const parseAndCategorize = inngest.createFunction(
       currency: string;
       category: string;
       categoryScore: number;
-      raw: string;
+      raw: any;
     }>;
 
-    const categoryTotals: Record<string, number> = {};
-    for (const t of txs) {
-      categoryTotals[t.category] = (categoryTotals[t.category] ?? 0) + t.amount;
-      await (prisma as any).draftTransaction.create({
-        data: {
+    // Idempotency: clear existing drafts for this job before inserting (safe unless user already reviewing)
+    await prisma.draftTransaction.deleteMany({ where: { jobId } });
+
+    if (txs.length > 0) {
+      // Batch insert using createMany
+      const BATCH = 500;
+      for (let i = 0; i < txs.length; i += BATCH) {
+        const slice = txs.slice(i, i + BATCH).map((t) => ({
           userId,
           jobId,
           occurredAt: t.occurredAt,
@@ -86,8 +94,18 @@ export const parseAndCategorize = inngest.createFunction(
           category: t.category,
           categoryScore: t.categoryScore,
           raw: t.raw,
-        },
-      });
+        }));
+        await prisma.draftTransaction.createMany({
+          data: slice,
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    const categoryTotals: Record<string, number> = {};
+    for (const t of txs) {
+      const abs = Math.abs(t.amount);
+      categoryTotals[t.category] = (categoryTotals[t.category] ?? 0) + abs;
     }
 
     await prisma.importJob.update({

@@ -23,10 +23,28 @@ model ImportJob {
   filename     String
   status       ImportStatus @default(PENDING)
   error        String?
+  warning      String?  // 非阻断性提示：提取结果异常、部分 chunk 失败等
+  retryCount   Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  file         ImportFile?
   transactions Transaction[]
   draftTransactions DraftTransaction[]
+
+  @@index([userId, createdAt])
+}
+
+// 保存原始上传文件（base64 或二进制）。为避免巨大体积，可后期迁移到对象存储并仅存储引用。
+model ImportFile {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  userId    String
+  mimeType  String?
+  size      Int      // bytes
+  data      Bytes    // 原始文件内容（小文件）；大文件后续迁移外部存储
+  createdAt DateTime @default(now())
+  job       ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
 }
 
 model Transaction {
@@ -36,15 +54,16 @@ model Transaction {
   occurredAt    DateTime
   description   String
   merchant      String?
-  amount        Decimal
+  amount        Decimal   @db.Decimal(18, 2) // 正负号：收入为正，支出为负
   currency      String   @default("CNY")
   raw           Json?
   category      String?
   categoryScore Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  job           ImportJob? @relation(fields: [jobId], references: [id])
+  job           ImportJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
   @@index([userId, occurredAt])
+  @@index([userId, category])
 }
 
 model DraftTransaction {
@@ -54,14 +73,16 @@ model DraftTransaction {
   occurredAt    DateTime
   description   String
   merchant      String?
-  amount        Decimal
+  amount        Decimal  @db.Decimal(18, 2) // 保持与 Transaction 一致
   currency      String   @default("CNY")
   raw           Json?
   category      String?
   categoryScore Float?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  job           ImportJob @relation(fields: [jobId], references: [id])
+  job           ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // 幂等：同一 job 下同一原始记录去重，raw 哈希值写入 raw->>'hash' 字段或后续以扩展列实现；暂以 (jobId, occurredAt, description, amount) 近似
+  @@unique([jobId, occurredAt, description, amount])
   @@index([jobId])
   @@index([userId, occurredAt])
 }

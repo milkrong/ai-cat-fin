@@ -114,10 +114,13 @@ export const parseAndCategorizeExcel = inngest.createFunction(
         .map((t: ExtractedTx) => {
           const occurredAt = new Date(t.date);
           if (Number.isNaN(occurredAt.getTime())) return null;
+          let amount = t.amount;
+          if (t.type === "expense" && amount > 0) amount = -amount;
+          if (t.type === "income" && amount < 0) amount = Math.abs(amount);
           return {
             occurredAt,
             description: t.description,
-            amount: Math.abs(t.amount),
+            amount,
             currency: (t.currency ?? "CNY").toUpperCase(),
             merchant: t.merchant ?? null,
             category: t.category || "其他",
@@ -136,24 +139,35 @@ export const parseAndCategorizeExcel = inngest.createFunction(
         raw: any;
       }>;
 
-      const categoryTotals: Record<string, number> = {};
-      for (const row of rows) {
-        categoryTotals[row.category] =
-          (categoryTotals[row.category] ?? 0) + row.amount;
-        await prisma.draftTransaction.create({
-          data: {
+      // Idempotent insert: clear previous drafts for this job before inserting
+      await prisma.draftTransaction.deleteMany({ where: { jobId } });
+      if (rows.length > 0) {
+        const BATCH = 500;
+        for (let i = 0; i < rows.length; i += BATCH) {
+          const slice = rows.slice(i, i + BATCH).map((r) => ({
             userId,
             jobId,
-            occurredAt: row.occurredAt,
-            description: row.description,
-            merchant: row.merchant,
-            amount: row.amount,
-            currency: row.currency,
-            category: row.category,
-            categoryScore: row.categoryScore,
-            raw: row.raw,
-          },
-        });
+            occurredAt: r.occurredAt,
+            description: r.description,
+            merchant: r.merchant,
+            amount: r.amount,
+            currency: r.currency,
+            category: r.category,
+            categoryScore: r.categoryScore,
+            raw: r.raw,
+          }));
+          await prisma.draftTransaction.createMany({
+            data: slice,
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      const categoryTotals: Record<string, number> = {};
+      for (const row of rows) {
+        const abs = Math.abs(row.amount);
+        categoryTotals[row.category] =
+          (categoryTotals[row.category] ?? 0) + abs;
       }
 
       await prisma.importJob.update({
