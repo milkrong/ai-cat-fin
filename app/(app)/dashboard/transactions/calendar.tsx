@@ -193,7 +193,7 @@ export function TransactionsCalendar({
   };
 
   const calendarCard = (
-    <div className="border rounded p-3 space-y-3">
+    <div className="min-w-0 overflow-hidden rounded border bg-white p-2 space-y-3 sm:p-3">
       <div className="flex items-center justify-between">
         <button
           onClick={() => setMonth((m) => addMonths(m, -1))}
@@ -227,7 +227,7 @@ export function TransactionsCalendar({
             selectedDateParam && isSameDay(d, parseISO(selectedDateParam));
           const isWeekend = d.getDay() === 0 || d.getDay() === 6; // Sunday 0, Saturday 6
           const baseClasses =
-            "aspect-square relative rounded border text-[11px] cursor-pointer flex flex-col items-center justify-center overflow-hidden";
+            "aspect-square relative rounded border text-[11px] cursor-pointer flex flex-col items-center justify-center overflow-hidden min-w-0";
           const stateClasses = selected
             ? "bg-blue-600 text-white border-blue-600"
             : isToday(d)
@@ -253,11 +253,11 @@ export function TransactionsCalendar({
               <div className="flex flex-col items-center justify-between h-full py-1">
                 <span className="text-xs leading-none">{format(d, "d")}</span>
                 {count > 0 ? (
-                  <span className="inline-flex items-center justify-center h-4 min-w-[1.1rem] px-1 rounded-full bg-blue-100 text-blue-700 text-[10px] leading-none">
+                  <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-blue-100 text-blue-700 text-[10px] leading-none">
                     {count}
                   </span>
                 ) : (
-                  <span className="h-4 min-w-[1.1rem] px-1 invisible" />
+                  <span className="h-4 min-w-4 px-1 invisible" />
                 )}
               </div>
               {detail && (
@@ -367,7 +367,7 @@ export function TransactionsCalendar({
   );
 
   const trendCard = (
-    <div className="border rounded p-3 space-y-2">
+    <div className="min-w-0 rounded border bg-white p-2 space-y-2 sm:p-3">
       <div className="flex items-center justify-between text-[11px] font-medium text-gray-700">
         <span>月度支出趋势</span>
         {!summary.loading &&
@@ -400,7 +400,7 @@ export function TransactionsCalendar({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {calendarCard}
       {trendCard}
     </div>

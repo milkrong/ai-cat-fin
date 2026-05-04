@@ -103,9 +103,27 @@ export const overridesSchema = z.object({
         category: z.string().min(1).optional(),
         description: z.string().min(1).optional(),
         merchant: z.string().min(1).optional(),
+        occurredAt: z.string().datetime().optional(),
+        amount: z.coerce.number().finite().optional(),
+        currency: z.string().min(3).max(8).optional(),
       })
     )
     .default([]),
+  rows: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(120),
+        occurredAt: z.string().datetime(),
+        description: z.string().min(1),
+        merchant: z.string().trim().optional().nullable(),
+        amount: z.coerce.number().finite(),
+        currency: z.string().min(3).max(8).default("CNY"),
+        category: z.string().trim().optional().nullable(),
+        categoryScore: z.coerce.number().finite().optional().nullable(),
+        raw: z.any().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const monthParamSchema = z.object({

@@ -10,7 +10,7 @@ datasource db {
 model UserSetting {
   id                 String   @id @default(cuid())
   userId             String   @unique
-  categorizerProvider CategorizerProvider @default(OPENAI)
+  categorizerProvider CategorizerProvider @default(OPENROUTER)
   autoAnalyzeEnabled Boolean  @default(true)
   currency           String   @default("CNY")
   createdAt          DateTime @default(now())
@@ -96,9 +96,9 @@ enum ImportStatus {
 }
 
 enum CategorizerProvider {
+  OPENROUTER
   OPENAI
   COZE
   DIFY
   RULES
 }
-

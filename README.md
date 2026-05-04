@@ -1,16 +1,16 @@
 Smart Ledger
 
-Import PDF bills, auto-categorize transactions with AI (OpenAI or SiliconFlow), including Chinese 账单解析, and view insights.
+Import PDF bills, auto-categorize transactions with AI via OpenRouter, including Chinese 账单解析, and view insights.
 
 Setup
 
-1. Copy env template
+1. Create the local env file
 
 ```bash
-cp .env.example .env.local
+touch .env.local
 ```
 
-2. Fill in env keys (any not used can be omitted):
+2. Fill in `.env.local` keys (any not used can be omitted). Local development uses only `.env.local`; Prisma scripts load it explicitly. Production/container deployments should inject env through Docker Compose or the hosting platform, not a committed env file.
 
 Required:
 
@@ -20,9 +20,9 @@ Required:
 
 Optional AI Providers:
 
-- OPENAI_API_KEY (OpenAI categorization fallback)
-- SILICONFLOW_API_KEY (启用 SiliconFlow，用于中文批量解析与分类)
-- SILICONFLOW_BASE_URL (可选，默认 https://api.siliconflow.cn)
+- OPENROUTER_API_KEY (OpenRouter，用于中文批量解析与分类)
+- OPENROUTER_MODEL (可选，默认 qwen/qwen3-32b)
+- OPENROUTER_BASE_URL (可选，默认 https://openrouter.ai/api)
 
 Cleanup Cron:
 
@@ -31,13 +31,19 @@ Cleanup Cron:
 3. Migrate database
 
 ```bash
-npx prisma migrate dev --name init
+pnpm prisma:migrate -- --name init
 ```
 
 4. Start dev server
 
 ```bash
-npm run dev
+pnpm dev
+```
+
+5. Start the local Inngest dev server in another terminal when testing uploads:
+
+```bash
+pnpm inngest:dev
 ```
 
 Endpoints
@@ -51,12 +57,12 @@ Auth
 
 AI Categorization, Excel & Chinese Parsing
 
-- 默认使用 OpenAI，如果设置了 `SILICONFLOW_API_KEY` 会优先使用 SiliconFlow（模型示例: Qwen/Qwen2.5-7B-Instruct）。
+- 默认使用 OpenRouter（模型默认 `qwen/qwen3-32b`，可通过 `OPENROUTER_MODEL` 调整）。
 - PDF 解析后首先用正则提取常见格式：
   - `YYYY-MM-DD 商户 -23.50 CNY`
   - `YYYY/MM/DD 星巴克 -23.50 元`
   - `01月02日 星巴克 23.50`
-- 无法匹配的剩余行会打包发送给 SiliconFlow 让模型输出结构化 JSON（日期、描述、金额、币种）。
+- 无法匹配的剩余行会打包发送给 OpenRouter 模型输出结构化 JSON（日期、描述、金额、币种）。
 - Excel (.xlsx/.xls/.csv) 会解析第一张表的前几列，自动匹配列名(日期/描述/金额/币种/商户)。解析结果同样进入草稿审核。
 - 分类输出包含 `category` 与置信度 `score`，中文常见分类如：餐饮, 交通出行, 日用品, 娱乐, 网购, 其他 等。
 
@@ -141,4 +147,4 @@ export async function POST(req: Request) {
 
 - 未配置任何 AI key 时可切换 provider 为 RULES（简单规则分类）。
 - 增加更多中文正则格式可直接编辑 `parse-and-categorize.ts` 中的 `regexes` 数组。
-- 如果需要更换 SiliconFlow 模型，修改 `categorizer.ts` 与工作流中调用的 `model` 字段。
+- 如果需要更换 OpenRouter 模型，设置 `OPENROUTER_MODEL`。

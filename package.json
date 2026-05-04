@@ -7,8 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "inngest:dev": "npx --ignore-scripts=false inngest-cli@1.11.10 dev -u http://localhost:3001/api/inngest",
+    "prisma:generate": "sh -c 'set -a; . ./.env.local; set +a; prisma generate \"$@\"' --",
+    "prisma:migrate": "sh -c 'set -a; . ./.env.local; set +a; prisma migrate dev \"$@\"' --"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.30",

@@ -24,7 +24,7 @@ export const parseAndCategorize = inngest.createFunction(
       .data;
     await prisma.importJob.update({
       where: { id: jobId },
-      data: { status: "PROCESSING" },
+      data: { status: "PROCESSING", error: null, warning: null },
     });
 
     const buffer = Buffer.from(fileBuffer, "base64");
@@ -38,7 +38,10 @@ export const parseAndCategorize = inngest.createFunction(
       });
       await prisma.importJob.update({
         where: { id: jobId },
-        data: { status: "FAILED" as any },
+        data: {
+          status: "FAILED",
+          error: err instanceof Error ? err.message : "pdf_parse_failed",
+        },
       });
       throw err;
     }
@@ -110,7 +113,7 @@ export const parseAndCategorize = inngest.createFunction(
 
     await prisma.importJob.update({
       where: { id: jobId },
-      data: { status: "REVIEW" as any },
+      data: { status: "REVIEW", error: null },
     });
     return { count: txs.length, categories: categoryTotals, status: "REVIEW" };
   }

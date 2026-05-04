@@ -1,4 +1,5 @@
-import { siliconflowChatJSON } from "@/src/lib/siliconflow";
+import { env } from "@/src/lib/env";
+import { openrouterChatJSON } from "@/src/lib/openrouter";
 
 export interface ExtractedTx {
   date: string; // YYYY-MM-DD
@@ -22,8 +23,8 @@ export async function aiExtractTransactionsFromText(
   raw: string,
   options: ExtractOptions = {}
 ) {
-  const model = options.model || "Qwen/Qwen3-32B";
-  const json = await siliconflowChatJSON<{ transactions?: ExtractedTx[] }>({
+  const model = options.model || env.OPENROUTER_MODEL || "qwen/qwen3-32b";
+  const json = await openrouterChatJSON<{ transactions?: ExtractedTx[] }>({
     model,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
