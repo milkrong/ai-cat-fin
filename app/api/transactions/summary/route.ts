@@ -83,7 +83,7 @@ export async function GET(req: Request) {
       // Transform daily entries
       for (const d of daily) {
         d.expense = -d.income; // make negative
-        d.income = 0 as any;
+        d.income = 0;
       }
       income = 0;
     }

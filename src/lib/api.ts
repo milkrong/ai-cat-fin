@@ -6,8 +6,8 @@ import { ZodError, z } from "zod";
 export class ApiError extends Error {
   status: number;
   code?: string;
-  details?: any;
-  constructor(status: number, message: string, code?: string, details?: any) {
+  details?: unknown;
+  constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message);
     this.status = status;
     this.code = code;
@@ -18,7 +18,7 @@ export class ApiError extends Error {
 export interface ApiErrorBody {
   error: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export function jsonError(err: unknown, fallbackStatus = 500): Response {
@@ -47,7 +47,7 @@ export function jsonOk<T>(data: T, init?: number | ResponseInit): Response {
  * Wrap an async handler providing zod validation and unified errors.
  * The validator can return either the parsed object or throw ApiError.
  */
-export function withHandler<Ctx extends Record<string, any>, R>(
+export function withHandler<Ctx extends Record<string, unknown>, R>(
   handler: (ctx: Ctx) => Promise<R> | R
 ): (ctx: Ctx) => Promise<Response> {
   return async (ctx: Ctx) => {
@@ -55,7 +55,7 @@ export function withHandler<Ctx extends Record<string, any>, R>(
       const result = await handler(ctx);
       // If handler already returned a Response, pass through
       if (result instanceof Response) return result;
-      return jsonOk(result as any);
+      return jsonOk(result);
     } catch (e) {
       return jsonError(e);
     }

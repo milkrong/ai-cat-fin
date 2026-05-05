@@ -1,4 +1,6 @@
 declare module "*/review-client" {
-  const C: any;
+  import type { ComponentType } from "react";
+
+  const C: ComponentType<Record<string, unknown>>;
   export default C;
 }

@@ -23,10 +23,14 @@ type DraftRow = {
   raw: Prisma.InputJsonValue;
 };
 
+type InngestStep = {
+  run<T>(id: string, fn: () => Promise<T> | T): Promise<T>;
+};
+
 export const parseAndCategorizeExcel = inngest.createFunction(
   { id: "parse-and-categorize-excel" },
   { event: "excel/ingested" },
-  async ({ event, step }: { event: unknown; step: any }) => {
+  async ({ event, step }: { event: unknown; step: InngestStep }) => {
     const { userId, jobId, filename, fileBuffer } = (
       event as unknown as ExcelEventPayload
     ).data;
@@ -42,7 +46,7 @@ export const parseAndCategorizeExcel = inngest.createFunction(
         ? XLSX.read(buf.toString("utf8"), { type: "string", raw: true })
         : XLSX.read(buf, { type: "buffer" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const json: any[] = XLSX.utils.sheet_to_json(sheet, {
+      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
         defval: null,
         raw: true,
       });
@@ -80,11 +84,11 @@ export const parseAndCategorizeExcel = inngest.createFunction(
         status: "REVIEW",
         data: rows,
       };
-    } catch (err: any) {
+    } catch (err) {
       console.error("[Inngest] excel/ingested error", {
         jobId,
-        error: err?.message,
-        stack: err?.stack,
+        error: err instanceof Error ? err.message : "excel_parse_failed",
+        stack: err instanceof Error ? err.stack : undefined,
       });
       try {
         await prisma.importJob.update({
@@ -97,7 +101,7 @@ export const parseAndCategorizeExcel = inngest.createFunction(
       } catch (inner) {
         console.error("[Inngest] failed to mark job FAILED", {
           jobId,
-          error: (inner as any)?.message,
+          error: inner instanceof Error ? inner.message : "update_failed",
         });
       }
       throw err;
@@ -105,7 +109,10 @@ export const parseAndCategorizeExcel = inngest.createFunction(
   }
 );
 
-async function parseRowsWithAI(json: any[], step: any): Promise<DraftRow[]> {
+async function parseRowsWithAI(
+  json: Record<string, unknown>[],
+  step: InngestStep
+): Promise<DraftRow[]> {
       // Flatten rows -> lines & basic noise filtering
       const lines = json
         .map((r) => Object.values(r).join(" "))
@@ -162,11 +169,11 @@ async function parseRowsWithAI(json: any[], step: any): Promise<DraftRow[]> {
               extracted: part.length,
             });
             results.push(...part);
-          } catch (e: any) {
+          } catch (e) {
             console.warn("[Inngest] chunk failed (skipping)", {
               worker: workerId,
               chunk: idx + 1,
-              error: e?.message,
+              error: e instanceof Error ? e.message : "chunk_failed",
             });
             // continue with next chunk
           }

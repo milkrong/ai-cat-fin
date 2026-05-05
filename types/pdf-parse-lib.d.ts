@@ -1,10 +1,10 @@
 declare module "pdf-parse/lib/pdf-parse.js" {
   import { Buffer } from "node:buffer";
   interface PDFMetaData {
-    [k: string]: any;
+    [k: string]: unknown;
   }
   interface PDFInfo {
-    [k: string]: any;
+    [k: string]: unknown;
   }
   interface PDFParseResult {
     numpages: number;
@@ -16,7 +16,7 @@ declare module "pdf-parse/lib/pdf-parse.js" {
   }
   function pdf(
     data: Buffer | Uint8Array,
-    options?: any
+    options?: Record<string, unknown>
   ): Promise<PDFParseResult>;
   export default pdf;
 }

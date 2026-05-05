@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { formatNumber, formatCurrency } from "@/src/lib/format";
+import { formatCurrency } from "@/src/lib/format";
 
 interface DailyPoint {
   date: string; // YYYY-MM-DD

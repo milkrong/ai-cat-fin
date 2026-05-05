@@ -12,7 +12,7 @@ import { ImportStatus } from "@prisma/client";
 export const cleanupStaleImportJobs = inngest.createFunction(
   { id: "cleanup-stale-import-jobs" },
   { cron: "0 * * * *" }, // hourly at minute 0
-  async ({ step }) => {
+  async () => {
     const days = Number(process.env.IMPORT_JOB_REVIEW_RETENTION_DAYS || 7);
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 

@@ -69,8 +69,11 @@ function tryParseJSON<T>(
 ): { ok: true; value: T } | { ok: false; error: string } {
   try {
     return { ok: true, value: JSON.parse(text) };
-  } catch (e: any) {
-    return { ok: false, error: e.message };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "unknown_parse_error",
+    };
   }
 }
 

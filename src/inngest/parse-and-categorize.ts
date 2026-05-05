@@ -1,5 +1,6 @@
 import { inngest } from "@/src/lib/inngest";
 import { prisma } from "@/src/lib/db";
+import { Prisma } from "@prisma/client";
 // Import the library implementation directly to avoid pdf-parse's index.js
 // debug self-execution that attempts to read a test PDF when module.parent is falsy.
 // Turbopack/Next bundling can cause that condition, leading to ENOENT './test/data/05-versions-space.pdf'.
@@ -16,6 +17,20 @@ type EventPayload = {
   };
 };
 
+type PdfParseResult = {
+  text: string;
+};
+
+type DraftRow = {
+  occurredAt: Date;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string;
+  categoryScore: number;
+  raw: Prisma.InputJsonValue;
+};
+
 export const parseAndCategorize = inngest.createFunction(
   { id: "parse-and-categorize" },
   { event: "pdf/ingested" },
@@ -28,13 +43,13 @@ export const parseAndCategorize = inngest.createFunction(
     });
 
     const buffer = Buffer.from(fileBuffer, "base64");
-    let result: any;
+    let result: PdfParseResult;
     try {
-      result = await pdf(buffer);
-    } catch (err: any) {
+      result = (await pdf(buffer)) as PdfParseResult;
+    } catch (err) {
       console.error("[Inngest] pdf parse error", {
         jobId,
-        error: err?.message,
+        error: err instanceof Error ? err.message : "pdf_parse_failed",
       });
       await prisma.importJob.update({
         where: { id: jobId },
@@ -69,15 +84,7 @@ export const parseAndCategorize = inngest.createFunction(
           raw: { source: "AI_FULL", text: t.description },
         };
       })
-      .filter(Boolean) as Array<{
-      occurredAt: Date;
-      description: string;
-      amount: number;
-      currency: string;
-      category: string;
-      categoryScore: number;
-      raw: any;
-    }>;
+      .filter(Boolean) as DraftRow[];
 
     // Idempotency: clear existing drafts for this job before inserting (safe unless user already reviewing)
     await prisma.draftTransaction.deleteMany({ where: { jobId } });

@@ -25,8 +25,8 @@ export async function openrouterChatJSON<T = unknown>(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "http://localhost:3001",
-      "X-Title": "Smart Ledger",
+      "HTTP-Referer": env.OPENROUTER_APP_URL || "http://localhost:3000",
+      "X-Title": env.OPENROUTER_APP_NAME || "Smart Ledger",
     },
     body: JSON.stringify({ ...req, response_format: { type: "json_object" } }),
   });
