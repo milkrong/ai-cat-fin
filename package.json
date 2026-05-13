@@ -2,6 +2,7 @@
   "name": "smart-ledger",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.12.2",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -39,5 +40,17 @@
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@clerk/shared",
+      "@prisma/client",
+      "@prisma/engines",
+      "@tailwindcss/oxide",
+      "prisma",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
