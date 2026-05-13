@@ -46,6 +46,22 @@ pnpm dev
 pnpm inngest:dev
 ```
 
+Docker
+
+`docker-compose.yml` starts only the app container. Inject your existing Postgres connection string through `DATABASE_URL`:
+
+```env
+DATABASE_URL=postgresql://user:password@db-host:5432/account_book
+```
+
+Start the app container:
+
+```bash
+docker compose up --build
+```
+
+The app is exposed on `http://localhost:13002` by default. Override `APP_PORT` from your shell or a local Compose env file when needed. Do not use `localhost` in `DATABASE_URL` unless the database is inside the same container; use `host.docker.internal` for a database running on the Docker host, or use the real database host/IP.
+
 Endpoints
 
 - /api/upload: POST multipart/form-data with field `file` (PDF 或 Excel: .xlsx/.xls/.csv)
