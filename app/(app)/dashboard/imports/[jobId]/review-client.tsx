@@ -318,8 +318,8 @@ export default function ReviewClient({
         <Metric label="未分类" value={`${displaySummary.uncategorized}`} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_280px]">
-        <div className="rounded border border-slate-200 bg-white">
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 rounded border border-slate-200 bg-white">
           <div className="flex flex-col gap-3 border-b border-slate-200 p-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="flex flex-wrap gap-2">
               <SegmentButton
@@ -549,7 +549,7 @@ export default function ReviewClient({
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <div className="rounded border border-slate-200 bg-white p-4">
             <h2 className="font-medium">分类预览</h2>
             <div className="mt-3 space-y-2">
